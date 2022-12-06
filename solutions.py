@@ -130,6 +130,17 @@ def day_5():
     )
 
 
+def day_6():
+    data_in = data(6, True)
+    i = 4
+    while len(set(data_in[i - 4:i])) < 4:
+        i += 1
+    j = 14
+    while len(set(data_in[j - 14:j])) < 14:
+        j += 1
+    return i, j
+
+
 if __name__ == '__main__':
     for f in dir():
         if f.startswith('day'):
