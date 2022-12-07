@@ -141,6 +141,39 @@ def day_6():
     return i, j
 
 
+def day_7():
+    data_in = data(7)
+    path = []
+    dirs = defaultdict(int)
+
+    def add_size(path: List[str], size: int):
+        for i in range(len(path)):
+            dirs[tuple(path[:i + 1])] += size
+
+    for line in data_in:
+        if line.startswith('$ cd ..'):
+            path.pop()
+        elif line.startswith('$ cd /'):
+            path = ['/']
+        elif line.startswith('$ cd'):
+            path.append(line[4:].strip())
+        elif line.startswith('$ ls'):
+            continue
+        elif line.startswith('dir'):
+            continue
+        else:
+            size, _ = line.split(' ')
+            add_size(path, int(size))
+
+    result_1 = sum(value for value in dirs.values() if value <= 100000)
+
+    total_size = dirs[('/',)]
+    delta = total_size - 40000000
+    candidates = {key: v for key, v in dirs.items() if v >= delta}
+    sorted_candidates = sorted(candidates.items(), key=lambda item: item[1])
+    return result_1, sorted_candidates[0][1]
+
+
 if __name__ == '__main__':
     for f in dir():
         if f.startswith('day'):
