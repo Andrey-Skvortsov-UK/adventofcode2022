@@ -174,6 +174,51 @@ def day_7():
     return result_1, sorted_candidates[0][1]
 
 
+def day_8():
+    data_in = data(8)
+    x = len(data_in[0])
+    y = len(data_in)
+
+    cnt = 0
+    for i in range(1, x - 1):
+        for j in range(1, y - 1):
+            cnt += int(any(
+                [
+                    all(data_in[j][i] > data_in[j][k] for k in range(i + 1, x)),
+                    all(data_in[j][i] > data_in[j][k] for k in range(0, i)),
+                    all(data_in[j][i] > data_in[k][i] for k in range(j + 1, y)),
+                    all(data_in[j][i] > data_in[k][i] for k in range(0, j)),
+                ]
+            ))
+    result_1 = 2 * (x + y) - 4 + cnt
+
+    max_score = 0
+    for i in range(1, x - 1):
+        for j in range(1, y - 1):
+            z1, z2, z3, z4 = 0, 0, 0, 0
+            for k in range(i + 1, x):
+                z1 += 1
+                if data_in[j][i] <= data_in[j][k]:
+                    break
+            for k in range(i, 0, -1):
+                z2 += 1
+                if data_in[j][i] <= data_in[j][k - 1]:
+                    break
+            for k in range(j + 1, y):
+                z3 += 1
+                if data_in[j][i] <= data_in[k][i]:
+                    break
+            for k in range(j, 0, -1):
+                z4 += 1
+                if data_in[j][i] <= data_in[k - 1][i]:
+                    break
+            score = z1 * z2 * z3 * z4
+            if score > max_score:
+                max_score = score
+
+    return result_1, max_score
+
+
 if __name__ == '__main__':
     for f in dir():
         if f.startswith('day'):
