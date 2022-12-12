@@ -219,6 +219,67 @@ def day_8():
     return result_1, max_score
 
 
+def day_9():
+    data_in = data(9)
+    moves = list(map(lambda x: x.split(' '), data_in))
+
+    def print_robe(robe, f, knots):
+        f.write('\n\n')
+        X = [knot[0] for knot in robe]
+        Y = [knot[1] for knot in robe]
+        x0, x1 = min(X), max(X)
+        y0, y1 = min(Y), max(Y)
+
+        lx = x1 - x0 + 2
+        ly = y1 - y0 + 2
+        grid = [['.' for _ in range(lx)] for __ in range(ly)]
+        for i in range(knots):
+            grid[ly - robe[i][1] + y0 - 2][robe[i][0] + 1 - x0] = f'{i}'
+
+        for line in grid:
+            f.write(''.join(line) + '\n')
+
+    def move_head(robe, direction):
+        if direction == 'R':
+            robe[0][0] += 1
+        elif direction == 'L':
+            robe[0][0] -= 1
+        elif direction == 'U':
+            robe[0][1] += 1
+        elif direction == 'D':
+            robe[0][1] -= 1
+
+    def move_tail(robe, knots):
+        for i in range(1, knots):
+            if abs(robe[i-1][0] - robe[i][0]) > 1 and abs(robe[i-1][1] - robe[i][1]) > 1:
+                robe[i][0] = (robe[i - 1][0] + robe[i][0]) // 2
+                robe[i][1] = (robe[i - 1][1] + robe[i][1]) // 2
+            elif abs(robe[i-1][0] - robe[i][0]) > 1:
+                robe[i][0] = (robe[i - 1][0] + robe[i][0])//2
+                robe[i][1] = robe[i - 1][1]
+            elif abs(robe[i - 1][1] - robe[i][1]) > 1:
+                robe[i][1] = (robe[i - 1][1] + robe[i][1]) // 2
+                robe[i][0] = robe[i - 1][0]
+
+    def move_robe(knots) -> int:
+        robe = [[0, 0] for _ in range(knots)]
+        f_out = open(f'day9_out_{knots}knots.txt', 'w')
+        visited = []
+
+        for direction, steps in moves:
+            steps = int(steps)
+            f_out.write(f'\n{direction}{steps}\n')
+            for _ in range(steps):
+                move_head(robe, direction)
+                move_tail(robe, knots)
+                visited.append(tuple(robe[-1]))
+                print_robe(robe, f_out, knots)
+
+        return len(set(visited))
+
+    return move_robe(2), move_robe(10)
+
+
 if __name__ == '__main__':
     for f in dir():
         if f.startswith('day'):
