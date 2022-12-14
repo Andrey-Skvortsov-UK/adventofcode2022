@@ -14,7 +14,7 @@ def data(day: int, as_str: bool = False) -> Union[str, List[str]]:
     return result
 
 
-def day_1():
+def day_01():
     return (
         max(
             map(
@@ -39,7 +39,7 @@ def day_1():
     )
 
 
-def day_2():
+def day_02():
     return (
         sum(
             map(
@@ -64,7 +64,7 @@ def day_2():
     )
 
 
-def day_3():
+def day_03():
     part_1 = sum(
         ord(l) - int(l.upper() == l) * 38 - int(l.lower() == l) * 96
         for l in
@@ -85,7 +85,7 @@ def day_3():
     return part_1, part_2
 
 
-def day_4():
+def day_04():
     sections = [
         list(map(int, (a, b, c, d)))
         for (a, b), (c, d) in [
@@ -105,7 +105,7 @@ def day_4():
     )
 
 
-def day_5():
+def day_05():
     stacks = defaultdict(str)
     data_in = data(5)
 
@@ -130,7 +130,7 @@ def day_5():
     )
 
 
-def day_6():
+def day_06():
     data_in = data(6, True)
     i = 4
     while len(set(data_in[i - 4:i])) < 4:
@@ -141,7 +141,7 @@ def day_6():
     return i, j
 
 
-def day_7():
+def day_07():
     data_in = data(7)
     path = []
     dirs = defaultdict(int)
@@ -174,7 +174,7 @@ def day_7():
     return result_1, sorted_candidates[0][1]
 
 
-def day_8():
+def day_08():
     data_in = data(8)
     x = len(data_in[0])
     y = len(data_in)
@@ -219,7 +219,7 @@ def day_8():
     return result_1, max_score
 
 
-def day_9():
+def day_09():
     data_in = data(9)
     moves = list(map(lambda x: x.split(' '), data_in))
 
@@ -278,6 +278,43 @@ def day_9():
         return len(set(visited))
 
     return move_robe(2), move_robe(10)
+
+
+def day_10():
+    data_in = data(10)
+
+    register = 1
+    states = []
+    for line in data_in:
+        if line == 'noop':
+            states += [register]
+        else:
+            _, value = line.split(' ')
+            states += [register, register]
+            register += int(value)
+
+    idx = 19
+    signal_strength = 0
+    while idx < len(states):
+        signal_strength += (idx+1) * states[idx]
+        idx += 40
+
+    crt = ''
+    for idx, sprite_position in enumerate(states, 1):
+        idx = idx % 40
+        if idx == 0:
+            idx = 40
+        if idx == 1:
+            crt += '\n'
+        if sprite_position <= idx <= (sprite_position + 2):
+            crt += 'X'
+        else:
+            crt += '.'
+        if idx % 5 == 0:
+            crt += '    '
+
+    print(crt)
+    return signal_strength
 
 
 if __name__ == '__main__':
