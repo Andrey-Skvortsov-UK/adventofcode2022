@@ -1,5 +1,6 @@
-from copy import copy
-from typing import List, Union
+from copy import copy, deepcopy
+from dataclasses import dataclass
+from typing import List, Union, Dict
 from collections import defaultdict
 from operator import itemgetter
 import sys
@@ -315,6 +316,146 @@ def day_10():
 
     print(crt)
     return signal_strength
+
+
+def day_11():
+    data_in = data(11)
+
+    @dataclass
+    class MonkeyData:
+        items: List[int]
+        operation: str
+        test_amount: int
+        test_monkey_true: int
+        test_monkey_false: int
+        inspected: int = 0
+
+    MonkeyDataType = Dict[str, List[MonkeyData]]
+
+    monkey_data: MonkeyDataType = {}
+    for i in range(0, len(data_in), 7):
+        monkey, items, formula, test, test_true, test_false = data_in[i:i + 6]
+        monkey = monkey[len('Monkey '):-1]
+        monkey_data[monkey] = MonkeyData(
+            items=list(map(int, items[len('  Starting items:'):].strip().split(','))),
+            operation=formula[len('  Operation: new = '):].strip(),
+            test_amount=int(test[len('  Test: divisible by '):]),
+            test_monkey_true=test_true[len('    If true: throw to monkey '):],
+            test_monkey_false=test_false[len('    If false: throw to monkey '):],
+        )
+
+    joint_mod = 1
+    for monkey in monkey_data.values():
+        joint_mod *= monkey.test_amount
+
+    def process_data(
+        rounds: int, monkey_data: MonkeyDataType, divide_3: bool,
+    ) -> MonkeyDataType:
+        datax = deepcopy(monkey_data)
+        for r in range(rounds):
+            for n, monkey in datax.items():
+                while monkey.items:
+                    monkey.inspected += 1
+                    old = monkey.items.pop(0)
+                    new = eval(monkey.operation)
+                    new %= joint_mod
+                    if divide_3:
+                        new = new // 3
+                    if new % monkey.test_amount == 0:
+                        datax[monkey.test_monkey_true].items.append(new)
+                    else:
+                        datax[monkey.test_monkey_false].items.append(new)
+        return datax
+
+    def get_business_level(monkey_data: MonkeyDataType)-> int:
+        inspected = [monkey.inspected for monkey in monkey_data.values()]
+        a, b = sorted(inspected)[-2:]
+        return a * b
+
+    data_1 = process_data(20, monkey_data, divide_3=True)
+    data_2 = process_data(10000, monkey_data, divide_3=False)
+
+    return get_business_level(data_1), get_business_level(data_2)
+
+
+def day_12():
+    data_in = data(12)
+
+    Y = len(data_in)
+    X = len(data_in[0])
+
+    def prepare_grid(start_l: str, stop_l: str):
+        grid = {}
+        start_points = []
+        letter_map = {'S': 'a', 'E': 'z'}
+        for x in range(X):
+            for y in range(Y):
+                point = (x, y)
+                letter = data_in[y][x]
+                if letter == stop_l:
+                    stop_point = (x,y)
+                if letter == start_l:
+                    start_points.append((x, y))
+                    grid[point] = [ord(letter), 0]
+                letter = letter_map.get(letter, letter)
+                if letter == start_l:
+                    start_points.append((x, y))
+                    grid[point] = [ord(letter), 0]
+                else:
+                    grid[point] = [ord(letter), -1]
+        return grid, start_points, stop_point
+
+    def print_grid(grid, stop_point, title=None):
+        g = f'{title}\n'
+        for y in range(Y):
+            for x in range(X):
+                if (x,y) == stop_point:
+                    g += 'X    '
+                else:
+                    g += (str(grid[(x,y)][1])+chr(grid[(x,y)][0])).ljust(5,' ')
+            g += '\n'
+        print(g)
+
+    def find(start_from: str):
+        grid, start_points, stop_point = prepare_grid(start_from, 'E')
+        step = 0
+        steps = {0: start_points}
+
+        result = None
+        while not result:
+            step += 1
+            steps[step] = []
+            for current in steps[step-1]:
+                points = [
+                    (current[0]-1, current[1]),
+                    (current[0]+1, current[1]),
+                    (current[0], current[1]-1),
+                    (current[0], current[1]+1),
+                ]
+                for point in points:
+                    # grid edge
+                    if point[0] < 0 or point[0] > X -1 or point[1] < 0 or point[1] > Y -1:
+                        continue
+                    # not eligible path
+                    if grid[point][0] - grid[current][0] > 1:
+                        continue
+                    # visited before
+                    if grid[point][1] >= 0:
+                        continue
+                    if point == stop_point:
+                        result = step
+                        break
+
+                    # mark as visited with path steps
+                    grid[point][1] = step
+                    steps[step].append(point)
+
+            if len(steps[step]) == 0 or result:
+                break
+
+        print_grid(grid, start_from, title=f'Path from:{start_from}')
+        return result
+    return find('S'), find('a')
 
 
 if __name__ == '__main__':
