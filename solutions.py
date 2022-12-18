@@ -1,5 +1,7 @@
 from copy import copy, deepcopy
 from dataclasses import dataclass
+from functools import cmp_to_key
+from itertools import zip_longest, chain
 from typing import List, Union, Dict
 from collections import defaultdict
 from operator import itemgetter
@@ -456,6 +458,47 @@ def day_12():
         print_grid(grid, start_from, title=f'Path from:{start_from}')
         return result
     return find('S'), find('a')
+
+
+def day_13():
+    data_in = data(13, True).strip('\n').split('\n\n')
+
+    pairs = [pair.split('\n') for pair in data_in]
+    pairs = [(eval(l), eval(r)) for l, r in pairs]
+
+    def compare(l, r) -> bool:
+        if type(l) == type(r) == int:
+            if l == r:
+                return 0
+            else:
+                return -1 if l < r else 1
+
+        if type(l) == int:
+            l = [l]
+        if type(r) == int:
+            r = [r]
+
+        for x, y in zip_longest(l, r, fillvalue=-1):
+            if x == -1:
+                return -1
+            if y == -1:
+                return 1
+            compare_result = compare(x, y)
+            if abs(compare_result) == 1:
+                return compare_result
+
+        return 0  # compare [] vs []
+
+    counter = 0
+    for idx, (x, y) in enumerate(pairs, 1):
+        if compare(x, y) == -1:
+            counter += idx
+
+    packets = list(chain(*pairs, ([[2]], [[6]])))
+    sorted_packets = sorted(packets, key=cmp_to_key(compare))
+    result = (sorted_packets.index([[2]]) + 1) * (sorted_packets.index([[6]]) + 1)
+
+    return counter, result
 
 
 if __name__ == '__main__':
