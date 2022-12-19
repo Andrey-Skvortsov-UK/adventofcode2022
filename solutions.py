@@ -2,7 +2,7 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from functools import cmp_to_key
 from itertools import zip_longest, chain
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Optional
 from collections import defaultdict
 from operator import itemgetter
 import sys
@@ -499,6 +499,96 @@ def day_13():
     result = (sorted_packets.index([[2]]) + 1) * (sorted_packets.index([[6]]) + 1)
 
     return counter, result
+
+
+def day_14():
+    data_in = data(14)
+
+    paths = [
+        [
+            map(int, position.split(','))
+            for position in line.split(' -> ')
+        ]
+        for line in data_in
+    ]
+
+    class GridWithFloor(defaultdict):
+        FLOOR = None
+
+        def __missing__(self, key):
+            x, y = key
+            if y == self.FLOOR:
+                return '#'
+            else:
+                return '.'
+
+    def init_grid(grid: GridWithFloor) -> GridWithFloor:
+        for path in paths:
+            x_before, y_before = path[0]
+            for x, y in path[1:]:
+                if x_before == x:
+                    for n in range(min(y_before, y), max(y_before, y) + 1):
+                        grid_in[x, n] = '#'
+                elif y_before == y:
+                    for n in range(min(x_before, x), max(x_before, x) + 1):
+                        grid_in[n, y] = '#'
+                x_before, y_before = x, y
+
+        all_x, all_y = list(zip(*list(grid_in)))
+        min_x = min(all_x)
+        max_x = max(all_x)
+        max_y = max(all_y)
+
+        return grid, (min_x, max_x, max_y)
+
+    def print_grid(grid: GridWithFloor, min_x: int, max_x: int, max_y: int):
+        print('Grid', min_x, max_x, max_y, grid.FLOOR)
+        for j in range(max_y + 1):
+            line = ''
+            for i in range(min_x, max_x + 1):
+                line += grid[i, j]
+            print(line + '\n')
+
+    def run_sand(grid: GridWithFloor, abuse_line: Optional[int] = None) -> int:
+        step = 0
+        while True:
+            x, y = 500, 0
+            while True:
+                grid[x, y] = '.'
+                if grid[x, y + 1] == '.':
+                    y += 1
+                elif grid[x - 1, y + 1] == '.':
+                    y += 1
+                    x -= 1
+                elif grid[x + 1, y + 1] == '.':
+                    y += 1
+                    x += 1
+                else:
+                    grid[x, y] = '+'
+                    break
+                grid[x, y] = '+'
+                if abuse_line and y >= abuse_line:
+                    break
+            if abuse_line and y >= abuse_line:
+                break
+            step += 1
+            if y == 0:
+                break
+        return step
+
+    grid_in = GridWithFloor()
+    grid_in, (min_x, max_x, max_y) = init_grid(grid_in)
+
+    grid_a = copy(grid_in)
+    grid_b = copy(grid_in)
+    grid_b.FLOOR = max_y + 2
+
+    step_a = run_sand(grid_a, abuse_line=max_y)
+    print_grid(grid_a, min_x, max_x, max_y)
+    step_b = run_sand(grid_b)
+    print_grid(grid_b, min_x, max_x, max_y + 2)
+
+    return step_a, step_b
 
 
 if __name__ == '__main__':
