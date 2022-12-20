@@ -591,7 +591,100 @@ def day_14():
     return step_a, step_b
 
 
+def day_15():
+    data_in = data(15)
+
+    sensors = [
+        (int(sx[2:]), int(sy[2:]), int(bx[2:]), int(by[2:]))
+        for ((sx, sy), (bx, by)) in [
+            (sensor.split(', '), beacon.split(', '))
+            for sensor, beacon in [
+                line[len('Sensor at '):].split(': closest beacon is at ')
+                for line in data_in
+            ]
+        ]
+    ]
+
+    def distance(sx, sy, x, y):
+        return abs(sx-x) + abs(sy-y)
+
+    # add distance
+    sensors = [(sx, sy, bx, by, distance(sx, sy, bx, by)) for sx, sy, bx, by in sensors]
+
+    def get_signal_coverage(line: int, limit: int = None):
+        # Create intervals
+        intervals = []
+        for sx, sy, bx, by, d in sensors:
+            delta = abs(sy - line)
+            if delta <= d:
+                delta = d - delta
+                intervals.append((sx - delta, sx + delta))
+
+        result = 0
+        result_intervals = []
+        while intervals:
+            x, y = intervals.pop()
+            intersection_found = False
+            for idx, (x1, y1) in enumerate(intervals):
+                # check intersections with other intervals
+                if x1 <= y and y1 >= x:
+                    x = min(x, x1)
+                    y = max(y, y1)
+                    # (x1, y1) interval processed and excluded from next processing
+                    intervals = [(x, y)] + intervals[:idx] + intervals[idx + 1:]
+                    intersection_found = True
+                    break
+            if intersection_found:
+                continue
+
+            if limit and 0 <= y and limit >= x:
+                y = min(y, limit)
+                x = max(x, 0)
+
+            # no intersections found: plus to result and continue
+            result += y - x + 1
+            result_intervals.append((x, y))
+
+        return result, result_intervals
+
+    #
+    #  Part 1
+    #
+    target_line = 2000000
+
+    # exclude sensors and beacons in the target line
+    correction_points = []
+    for sx, sy, bx, by, _ in sensors:
+        if sy == target_line:
+            correction_points.append(sy)
+        if by == target_line:
+            correction_points.append(by)
+    correction = len(set(correction_points))
+
+    result, _ = get_signal_coverage(target_line)
+    part_1 = result - correction
+
+    #
+    #  Part 2
+    #
+    max_coordinates = 4000000
+    for target_line in range(max_coordinates + 1):
+        result, result_intervals = get_signal_coverage(target_line, max_coordinates)
+        if result != max_coordinates + 1:
+            result_y = target_line
+            break
+
+    points = sorted(chain(*result_intervals))
+    for i in range(1, len(points) - 1, 2):
+        if points[i] + 2 == points[i+1]:
+            result_x = points[i] + 1
+            break
+    part_2 = 4000000*result_x + result_y
+
+    return part_1, part_2
+
+
 if __name__ == '__main__':
     for f in dir():
-        if f.startswith('day'):
+        if f.startswith('day_15'):
             print(f'{f}:', getattr(solutions, f)())
