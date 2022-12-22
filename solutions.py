@@ -2,7 +2,7 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from functools import cmp_to_key
 from itertools import zip_longest, chain
-from typing import List, Union, Dict, Optional
+from typing import List, Union, Dict, Optional, Set
 from collections import defaultdict
 from operator import itemgetter
 import sys
@@ -684,7 +684,84 @@ def day_15():
     return part_1, part_2
 
 
+def day_16():
+    data_in = data(16)
+
+    cache = {}
+    valves = {}
+    tunnels = {}
+    for line in data_in:
+        v, t = line.split(';')
+        valve = v[6:8]
+        rate = int(v.split('=')[1])
+        valves[valve] = rate
+        if t.startswith(' tunnels lead to valves '):
+            valve_tunnels = t[len(' tunnels lead to valves '):].split(', ')
+        else:
+            valve_tunnels = t[len(' tunnel leads to valve '):].split(', ')
+        tunnels[valve] = valve_tunnels
+
+    def get_key(position: str, states: Set, time: int, persons: int):
+        states_key = ','.join(sorted(states))
+        return f'{position}-{states_key}-{int(time)}-{persons}'
+
+    def pressure(position: str, states: Set, time: int, persons: int) -> int:
+        """
+        The function implements dynamic programming (DP) approach
+        It reduces DP system to the previous state using recursion:
+            - by people (persons - 1), or
+            - by time (time - 1, time - 2)
+        """
+        if time <= 0:
+            if persons > 1:
+                # the function would ignore already opened valves
+                # and do accumulate the impact from another person(s)
+                return pressure('AA', states, 26, persons - 1)
+            # recursion exit
+            return 0
+
+        key = get_key(position, states, time, persons)
+        result = cache.get(key)
+        if result is not None:
+            # another recursion exit - using cache is the another main idea of DP
+            return result
+
+        rate = valves[position]
+        result = 0
+        opened = position in states or rate == 0
+        if not opened:
+            current = valves[position] * (time - 1)
+            new_states = states | {position}
+
+        for new_position in tunnels[position]:
+            # the current valve impact accumulates by the function call
+            # which opened the valve
+            #
+            # !!! using new_states vs states here significantly improves the speed
+            # and gives the same results, but that is not 100% correct us
+            # we exclude double visiting the same valve:
+            #   - the first time with no opening the valve
+            #   - and the second time with opening
+            # that may be a variant when very valuable valve after the current and
+            # saved one more minute to not opening gives a big impact
+            result = max(result, pressure(new_position, states, time - 1, persons))
+            if not opened:
+                # we only add current pressure if we are opening the valve
+                result = max(
+                    result, current + pressure(
+                        new_position, new_states, time - 2, persons
+                    )
+                )
+        cache[key] = result
+        return result
+
+    result_1 = pressure('AA', set(), 30, 1)
+    result_2 = pressure('AA', set(), 26, 2)
+
+    return result_1, result_2
+
+
 if __name__ == '__main__':
     for f in dir():
-        if f.startswith('day_15'):
+        if f.startswith('day'):
             print(f'{f}:', getattr(solutions, f)())
